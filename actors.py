@@ -91,20 +91,20 @@ class lightswitch_bernie_shelly(actor):
 	}
 	states_on_day = {
 		"state/bernie/light/mode": 1,
-		"state/bernie/ceiling_light/power": 1,
-		"state/bernie/floor_light/power": 0,
+		"state/bernie/light/ceiling/power": 1,
+		"state/bernie/light/floor/power": 0,
 		"state/bernie/starprojector/power": 0
 	}
 	states_on_evening = {
 		"state/bernie/light/mode": 2, 
-		"state/bernie/ceiling_light/power": 0,
-		"state/bernie/floor_light/power": 1,
+		"state/bernie/light/ceiling/power": 0,
+		"state/bernie/light/floor/power": 1,
 		"state/bernie/starprojector/power": 1
 	}
 	states_off = {
 		"state/bernie/light/mode": 0,
-		"state/bernie/ceiling_light/power": 0,
-		"state/bernie/floor_light/power": 0,
+		"state/bernie/light/ceiling/power": 0,
+		"state/bernie/light/floor/power": 0,
 		"state/bernie/starprojector/power": 0
 	}
 
@@ -118,14 +118,15 @@ class lightswitch_bernie_shelly(actor):
 		self.publish_multiple_states(self.states_off)
 
 	def toggle(self, payload):
-		if self.states_internal["state/bernie/light/mode"]:
+		if int(self.states_internal["state/bernie/light/mode"]) > 0:
 			self.turn_off('')
 		else:
 			self.turn_on('')
 
 	actions = {
 		"turn_on": turn_on,
-		"turn_off": turn_off
+		"turn_off": turn_off,
+		"toggle": toggle
 	}
 
 
