@@ -47,11 +47,13 @@ class actor:
 		self.client.publish(topic, payload)
 
 	# run a command which is requested via mqtt
+	invoke_action_verbose = True
 	def invoke_action(self, topic, payload):
 		commandstring = topic.replace(self.topic + "/", '', 1)
 		try:
 			self.actions[commandstring](self, payload)
-			print(f"Actor {self.name} ({self.topic}) invoked action \"{commandstring}\"")
+			if self.invoke_action_verbose:
+				print(f"Actor {self.name} ({self.topic}) invoked action \"{commandstring}\"")
 		except:
 			print("invalid command '" + commandstring + "' for actor '" + self.name + "'")
 			
@@ -90,6 +92,9 @@ class cronjob(actor):
 	location = "internal"
 	name = "cronjob" 
 	topic = "actor/cronjob"
+
+	# dont print every action, avoid spam pls
+	invoke_action_verbose = False
 
 	states_internal = {
 		"state/time/hour": 0,
