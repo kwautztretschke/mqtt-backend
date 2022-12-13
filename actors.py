@@ -7,41 +7,64 @@ port = 1883
 
 
 class actor:
-	name = "undefined_actor"
-	def __init__(self):
-		# self.name = "undefined_actor" # maybe do something like assert(name)
-		self.type = self.__class__.__name__
-		self.topic = "actor/" + self.type + "/" + self.name
+	# variables to be redefined by derived classes
+	location = "nowhere"
+	type = "nothing"
+	name = "nobody"
+	# execute actions by sending a mqtt message to the topic
+ 	# "actor/location/type/name/command"
 
+	def __init__(self):
+		self.topic = "actor/" + self.location + "/" + self.type + "/" + self.name
 		self.client = mqtt_client.Client(self.type + "_" + self.name)
 		self.client.on_message = self.on_message
 		try:
 			self.client.connect(broker, port)
 			self.client.subscribe(self.topic + "/#")
 			self.subscribe_states()
-			print(f"Actor {self.name}({self.type}) connected successfully")
+			print(f"Actor {self.name} ({self.topic}) connected successfully")
 			self.client.loop_start()
 		except:
 			print("Connection error!")
 
+	# callback to be executed by mqtt client on message received
 	def on_message(self, client, userdata, msg):
-		# print(f"actor `{self.name}` ({self.type}) received `{msg.payload.decode()}` from `{msg.topic}` topic")
-
 		# command to be executed
 		if msg.topic.startswith("actor/"):
-			self.invoke_action(msg.topic,  msg.payload)
+			self.invoke_action(msg.topic, msg.payload.decode())
 
 		# state to be updated
 		if msg.topic.startswith("state/"):
-			self.update_states(msg.topic, msg.payload)
+			self.update_states(msg.topic, msg.payload.decode())
 
-	def publish(self, topic, payload):
+	# publish a state as a retained message
+	def publish_state(self, topic, payload):
 		self.client.publish(topic, payload, qos=1, retain=True)
 
+	# run a command which is requested via mqtt
 	def invoke_action(self, topic, payload):
 		commandstring = topic.replace(self.topic + "/", '', 1)
-		self.actions.get(commandstring, lambda: 'invalid')(self, payload)
+		try:
+			self.actions[commandstring](self, payload)
+			print(f"Actor {self.name} ({self.topic}) invoked action \"{commandstring}\"")
+		except:
+			print("invalid command '" + commandstring + "' for actor '" + self.name + "'")
+			
+	# subscribe the mqtt client to all topics in the states_internal dict
+	def subscribe_states(self):
+		for key in self.states_internal.keys():
+			self.client.subscribe(key)
+
+	# update the internal variable (dict entry) if a state changes
+	def update_states(self, topic, payload):
+		self.states_internal[topic] = payload
+
+	# update multiple states at once
+	def publish_multiple_states(self, dict):
+		for key in dict.keys():
+			self.publish_state(key, dict[key])
 		
+	# a dict containing states' values, to be used in logic, which gets updated
 	states_internal = {
 		"state/test": 0,
 		"state/test2": 0
@@ -50,38 +73,17 @@ class actor:
 	def test(self, payload):
 		print("test: " + payload)
 
+	# a dict containing pairs of command names and the functions to be executed
 	actions = {
 		"test": test
 	}
 
-	def subscribe_states(self):
-		for key in self.states_internal.keys():
-			print("actor " + self.name + " subscribing to " + key)
-			self.client.subscribe(key)
-
-	def update_states(self, topic, payload):
-		self.states_internal[topic] = payload.decode()
-		print(self.states_internal)
-
-	def publish_states(self, dict):
-		for key in dict.keys():
-			self.publish(key, dict[key])
-
 ##################################################
 
-class lightswitch(actor):
-	def turn_on(self, payload):
-		pass
-
-	def turn_off(self, payload):
-		pass
-
-	def toggle(self, payload):
-		pass
-
-
-class lightswitch_zimmer(lightswitch):
-	name = "zimmer"
+class lightswitch_bernie_shelly(actor):
+	type = "lightswitch"
+	location = "bernie"
+	name = "shelly"
 
 	states_internal = {
 		"state/time/hour": 0,
@@ -108,12 +110,12 @@ class lightswitch_zimmer(lightswitch):
 
 	def turn_on(self, payload):
 		if int(self.states_internal["state/time/hour"]) < 20:
-			self.publish_states(self.states_on_day)
+			self.publish_multiple_states(self.states_on_day)
 		else:
-			self.publish_states(self.states_on_evening)
+			self.publish_multiple_states(self.states_on_evening)
 
 	def turn_off(self, payload):
-		self.publish_states(self.states_off)
+		self.publish_multiple_states(self.states_off)
 
 	def toggle(self, payload):
 		if self.states_internal["state/bernie/light/mode"]:
@@ -127,4 +129,4 @@ class lightswitch_zimmer(lightswitch):
 	}
 
 
-instance_lightswitch_zimmer = lightswitch_zimmer()
+instance_lightswitch_zimmer = lightswitch_bernie_shelly()
