@@ -16,12 +16,6 @@ class cronjob(actor):
 		"bedroom/light/mode": "off" # to switch between day and evening
 	}
 
-	commands = {
-		"minute": minute,
-		"hour": hour,
-		"daytime": daytime
-	}
-
 	# called every minute
 	def minute(self, payload):
 		self.publish_state("time/minute", payload)
@@ -49,6 +43,12 @@ class cronjob(actor):
 			and payload == "day":
 			self.publish_state("bedroom/light/mode", "on")
 
+	commands = {
+		"minute": minute,
+		"hour": hour,
+		"daytime": daytime
+	}
+
 
 class lightswitch_bedroom(actor):
 	type = "shelly"
@@ -59,12 +59,6 @@ class lightswitch_bedroom(actor):
 	states = {
 		"time/daytime": "day",
 		"bedroom/light/mode": "off"
-	}
-
-	commands = {
-		"turn_on": turn_on,
-		"turn_off": turn_off,
-		"toggle": toggle
 	}
 
 	def turn_on(self, payload):
@@ -81,3 +75,9 @@ class lightswitch_bedroom(actor):
 			self.turn_off('')
 		else:
 			self.turn_on('')
+
+	commands = {
+		"turn_on": turn_on,
+		"turn_off": turn_off,
+		"toggle": toggle
+	}

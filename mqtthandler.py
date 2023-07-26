@@ -7,8 +7,13 @@ port = 1883
 
 
 def run():
+	# actors
 	cronjob = actors.cronjob()
-	lightswitch_bedroom = actors.lightswitch_bedroom()
+	bedroom_lightswitch = actors.lightswitch_bedroom()
+
+	# reactors
+	bedroom_whiteboard = reactors.bedroom_whiteboard()
+	bedroom_floorlamp = reactors.bedroom_floorlamp()
 	while (1):
 		pass
 

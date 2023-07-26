@@ -1,5 +1,21 @@
 from baseclasses import mqtt_reactor as reactor
 
+class bedroom_floorlamp(reactor):
+	type = "tasmota"
+	location = "bedroom"
+	name = "floorlamp"
+	topic = "reactor/bedroom/floorlamp"
+
+	states = {
+		"bedroom/light/mode": "off"
+	}
+
+	def determine_preset(self):
+		if self.states["bedroom/light/mode"] == "mood":
+			self.client.publish("cmnd/tasmota_floorlamp/Power", "on", qos=1, retain=True)
+		else:
+			self.client.publish("cmnd/tasmota_floorlamp/Power", "off", qos=1, retain=True)
+
 class bedroom_whiteboard(reactor):
 	type = "monochrome_led_strip"
 	location = "bedroom"

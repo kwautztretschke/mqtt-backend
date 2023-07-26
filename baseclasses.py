@@ -5,24 +5,6 @@ port = 1883
 
 
 class mqtt_actor:
-	############################### variables to be redefined by derived classes
-	# information about the reactor
-	location = "nowhere"
-	type = "nothing"
-	name = "nobody"
-	topic = "actor/undefined"
-
-	# a dict containing states' values, to be used in logic, which gets updated
-	states = {
-		"foo": 0,
-		"bar": 0
-	}
-
-	# a dict containing pairs of command names and the functions to be executed
-	commands = {
-		"test": helloworld
-	}
-
 	################################ general mqtt related utilities
 	# constructor, initializes the mqtt client
 	def __init__(self):
@@ -62,8 +44,11 @@ class mqtt_actor:
 		self.client.publish(topic, payload)
 
 	# publish a state as a retained message
+	publish_state_verbose = False
 	def publish_state(self, state, payload):
 		self.client.publish("state/" + state, payload, qos=1, retain=True)
+		if self.publish_state_verbose:
+			print(f"publishing \"{payload}\" to state/{state}")
 
 	# update multiple states at once, given a dict where the keys are topics
 	def publish_multiple_states(self, dict):
@@ -83,13 +68,83 @@ class mqtt_actor:
 		except:
 			print("invalid command '" + commandstring + "' for actor '" + self.name + "'")
 
+	############################### variables to be redefined by derived classes
+	# information about the reactor
+	location = "nowhere"
+	type = "nothing"
+	name = "nobody"
+	topic = "actor/undefined"
+
+	# a dict containing states' values, to be used in logic, which gets updated
+	states = {
+		"foo": 0,
+		"bar": 0
+	}
+
 	# a demo command that will be executed when "actor/undefined/test" is received
 	def helloworld(self, payload):
 		print("Hello World, payload: " + payload)
 
+	# a dict containing pairs of command names and the functions to be executed
+	commands = {
+		"test": helloworld
+	}
 
 
 class mqtt_reactor:
+	################################ general mqtt related utilities
+	# constructor, initializes the mqtt client
+	def __init__(self):
+		self.client = mqtt_client.Client(self.type + "_" + self.name)
+		self.client.on_message = self.on_message
+		try:
+			self.client.connect(broker, port)
+			self.subscribe_states()
+			print(f"Reactor {self.name} connected successfully")
+			self.client.loop_start()
+		except:
+			print("Connection error!")
+
+	# callback to be executed by mqtt client on message received
+	def on_message(self, client, userdata, msg):
+		self.update_state(msg.topic, msg.payload.decode())
+
+		if not self.passthrough_state(msg.topic, msg.payload.decode()):
+			self.determine_preset()  # Call the derived class's determine_preset function
+
+	# subscribe the mqtt client to all topics in the states dict
+	def subscribe_states(self):
+		for key in self.states.keys():
+			self.client.subscribe("state/" + key)
+
+	# update the internal variable (dict entry) if a state changes
+	def update_state(self, topic, payload):
+		state = topic.replace("state/", '', 1)
+		self.states[state] = payload
+
+	# publish a mqtt message to the hardware equivalent of the reactor
+	def publish_to_reactor(self, command, payload, retain=False):
+		self.client.publish(self.topic + "/" + command, payload, qos=1, retain=retain)
+
+	################################# reactor functionality specific functions
+	# Check if the received message matches any of the passthrough topics
+	def passthrough_state(self, topic, payload):
+		state = topic.replace("state/", '', 1)
+		passthrough = self.passthrough_states.get(state)
+		if passthrough:
+			self.publish_to_reactor(passthrough, payload, True)
+			return True  # Return True if the state was found in the passthrough dict
+		return False  # Return False if not
+
+	# depending on the states, apply a preset of commands
+	def determine_preset(self):
+		pass  # Derived classes will implement this method to determine and apply presets
+
+	# Apply the preset by sending the corresponding topic/payload tuples to the hardware
+	def apply_preset(self, preset_name):
+		for command, payload in self.presets[preset_name]:
+			self.publish_to_reactor(command, payload, True)
+
 	############################### variables to be redefined by derived classes
 	# information about the reactor
 	location = "nowhere"
@@ -117,57 +172,4 @@ class mqtt_reactor:
 			("billah", "207")
 		],
 	}
-
-	################################ general mqtt related utilities
-	# constructor, initializes the mqtt client
-	def __init__(self):
-		self.client = mqtt_client.Client(self.type + "_" + self.name)
-		self.client.on_message = self.on_message
-		try:
-			self.client.connect(broker, port)
-			self.subscribe_states()
-			print(f"Reactor {self.name} connected successfully")
-			self.client.loop_start()
-		except:
-			print("Connection error!")
-
-	# callback to be executed by mqtt client on message received
-	def on_message(self, client, userdata, msg):
-		self.update_states(msg.topic, msg.payload.decode())
-
-		if not self.passthrough_state(msg.topic, msg.payload.decode()):
-			self.determine_preset()  # Call the derived class's determine_preset function
-
-	# subscribe the mqtt client to all topics in the states dict
-	def subscribe_states(self):
-		for key in self.states.keys():
-			self.client.subscribe("state/" + key)
-
-	# update the internal variable (dict entry) if a state changes
-	def update_state(self, topic, payload):
-		state = topic.replace("state/", '', 1)
-		self.states[state] = payload
-
-	# publish a mqtt message to the hardware equivalent of the reactor
-	def publish_to_reactor(self, command, payload, retain=False):
-		self.client.publish(topic + "/" + command, payload, qos=1, retain)
-
-	################################# reactor functionality specific functions
-	# Check if the received message matches any of the passthrough topics
-	def passthrough_state(self, topic, payload):
-		state = topic.replace("state/", '', 1)
-		passthrough = self.passthrough_states.get(state)
-		if passthrough:
-			self.publish_to_reactor(passthrough, payload, True)
-			return True  # Return True if the state was found in the passthrough dict
-		return False  # Return False if not
-
-	# depending on the states, apply a preset of commands
-	def determine_preset(self):
-		pass  # Derived classes will implement this method to determine and apply presets
-
-	# Apply the preset by sending the corresponding topic/payload tuples to the hardware
-	def apply_preset(self, preset_name):
-		for command, payload in self.presets[preset_name]:
-			self.publish_to_reactor(topic, payload, True)
 
