@@ -1,13 +1,14 @@
 # python3.6
 
 import mqtt_actors as actors
+import mqtt_reactors as reactors
 broker = 'localhost'
 port = 1883
 
 
 def run():
-	instance_lightswitch_zimmer = actors.lightswitch_bernie_shelly()
-	instance_cronjob = actors.cronjob()
+	cronjob = actors.cronjob()
+	lightswitch_bedroom = actors.lightswitch_bedroom()
 	while (1):
 		pass
 
