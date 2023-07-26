@@ -9,11 +9,17 @@ class cronjob(actor):
 	# dont print every action, avoid spam pls
 	invoke_action_verbose = False
 
-	states_internal = {
+	states = {
 		"state/time/hour": 0,
 		"state/time/minute": 0,
 		"state/time/daytime": "day",
-		"state/bernie/light/mode": "off" # to switch between day and evening
+		"state/bedroom/light/mode": "off" # to switch between day and evening
+	}
+
+	commands = {
+		"minute": minute,
+		"hour": hour,
+		"daytime": daytime
 	}
 
 	# called every minute
@@ -35,50 +41,42 @@ class cronjob(actor):
 	def daytime(self, payload):
 		self.publish_state("state/time/daytime", payload)
 		# switch to a nicer lighting in the evening
-		if self.states_internal["state/bernie/light/mode"] == "on" \
+		if self.states["state/bedroom/light/mode"] == "on" \
 			and payload != "day":
-			self.publish_state("state/bernie/light/mode", "mood")
-		elif self.states_internal["state/bernie/light/mode"] == "mood" \
+			self.publish_state("state/bedroom/light/mode", "mood")
+		elif self.states["state/bedroom/light/mode"] == "mood" \
 			and payload == "day":
-			self.publish_state("state/bernie/light/mode", "on")
-
-	actions = {
-		"minute": minute,
-		"hour": hour,
-		"daytime": daytime
-	}
+			self.publish_state("state/bedroom/light/mode", "on")
 
 
-
-
-class lightswitch_bernie_shelly(actor):
+class lightswitch_bedroom_shelly(actor):
 	type = "lightswitch"
-	location = "bernie"
+	location = "bedroom"
 	name = "shelly"
-	topic = "actor/bernie/lightswitch/shelly"
+	topic = "actor/bedroom/lightswitch/shelly"
 
-	states_internal = {
+	states = {
 		"state/time/daytime": "day",
-		"state/bernie/light/mode": "off"
+		"state/bedroom/light/mode": "off"
 	}
 
-	def turn_on(self, payload):
-		if self.states_internal["state/time/daytime"] == "day":
-			self.publish_state("state/bernie/light/mode", "on")
-		else:
-			self.publish_state("state/bernie/light/mode", "mood")
-
-	def turn_off(self, payload):
-		self.publish_state("state/bernie/light/mode", "off")
-
-	def toggle(self, payload):
-		if int(self.states_internal["state/bernie/light/mode"]) > 0:
-			self.turn_off('')
-		else:
-			self.turn_on('')
-
-	actions = {
+	commands = {
 		"turn_on": turn_on,
 		"turn_off": turn_off,
 		"toggle": toggle
 	}
+
+	def turn_on(self, payload):
+		if self.states["state/time/daytime"] == "day":
+			self.publish_state("state/bedroom/light/mode", "on")
+		else:
+			self.publish_state("state/bedroom/light/mode", "mood")
+
+	def turn_off(self, payload):
+		self.publish_state("state/bedroom/light/mode", "off")
+
+	def toggle(self, payload):
+		if self.states["state/bedroom/light/mode"] != "off":
+			self.turn_off('')
+		else:
+			self.turn_on('')
