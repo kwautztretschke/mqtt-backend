@@ -16,11 +16,12 @@ class bedroom_floorlamp(reactor):
 		else:
 			self.client.publish("cmnd/tasmota_floorlamp/Power", "off", qos=1, retain=True)
 
+
 class bedroom_whiteboard(reactor):
 	type = "monochrome_led_strip"
 	location = "bedroom"
 	name = "whiteboard"
-	topic = "reactor/bedroom/whiteboard"
+	topic = "reactor/ESPwhiteboard"
 
 	states = {
 		"bedroom/light/mode": "off",
@@ -33,27 +34,27 @@ class bedroom_whiteboard(reactor):
 		],
 		"daytime_light": [
 			("power", "on"),
-			("program", "solidColor"),
+			("focus", "solidColor"),
 			("color", "00FFFF"),
 			("brightness", "128")
 		],
-		"mood_light": [
+		"evening_light": [
 			("power", "on"),
-			("program", "solidColor"),
-			("color", "FF0000"),
-			("brightness", "64")
+			("focus", "solidColor"),
+			("color", "FF00FF"),
+			("brightness", "128")
 		],
-		"silent_party": [
+		"daytime_music": [
 			("power", "on"),
-			("program", "solidColor"),
+			("focus", "syncedColor"),
 			("color", "00FF00"),
 			("brightness", "255")
 		],
-		"music_party": [
+		"evening_music": [
 			("power", "on"),
-			("program", "syncedColor"),
-			("color", "00FF00"),
-			("brightness", "255")
+			("focus", "syncedColor"),
+			("color", "FF00FF"),
+			("brightness", "128")
 		]
 	}
 

@@ -7,7 +7,7 @@ class cronjob(actor):
 	topic = "actor/cronjob"
 
 	# dont print every action, avoid spam pls
-	invoke_action_verbose = False
+	invoke_command_verbose = False
 
 	states = {
 		"time/hour": 0,
@@ -80,4 +80,30 @@ class lightswitch_bedroom(actor):
 		"turn_on": turn_on,
 		"turn_off": turn_off,
 		"toggle": toggle
+	}
+
+
+class lightswitch_bedroom(actor):
+	type = "python"
+	location = "bedroom"
+	name = "fartnet"
+	topic = "actor/bedroom/fartnet"
+
+	states = {
+		"time/daytime": "day",
+		"bedroom/light/mode": "off"
+	}
+
+	def play(self, payload):
+		if self.states["time/daytime"] == "day":
+			self.publish_state("bedroom/light/mode", "on")
+		else:
+			self.publish_state("bedroom/light/mode", "mood")
+
+	def stop(self, payload):
+		self.publish_state("bedroom/light/mode", "off")
+
+	commands = {
+		"play" : play,
+		"stop" : stop
 	}
