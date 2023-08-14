@@ -4,7 +4,7 @@
 SESSION_NAME="mqtt-backend"
 
 # Start the screen session and run the Python script
-screen -dmS $SESSION_NAME python your_script.py
+screen -dmS $SESSION_NAME python mqtt-backend.py
 
 # Optionally, you can add some delay here to ensure the Python script starts properly
 # sleep 1

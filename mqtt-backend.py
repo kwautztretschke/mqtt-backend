@@ -14,6 +14,7 @@ def run():
 	# reactors
 	bedroom_whiteboard = reactors.bedroom_whiteboard()
 	bedroom_floorlamp = reactors.bedroom_floorlamp()
+	RDG = reactors.RatDerGeleerten()
 	while (1):
 		pass
 
