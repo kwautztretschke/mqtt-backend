@@ -7,7 +7,7 @@ class cronjob(actor):
 	topic = "actor/cronjob"
 
 	# dont print every action, avoid spam pls
-	invoke_action_verbose = False
+	invoke_command_verbose = False
 
 	states = {
 		"time/hour": 0,
@@ -34,14 +34,15 @@ class cronjob(actor):
 	# called when daytime is changing
 	def daytime(self, payload):
 		self.publish_state("time/daytime", payload)
-		# switch to a nicer lighting in the evening
-		if self.states["bedroom/light/mode"] == "on" \
-			and payload != "day":
-			self.publish_state("bedroom/light/mode", "mood")
-		# or a brighter one at daytime
-		elif self.states["bedroom/light/mode"] == "mood" \
-			and payload == "day":
-			self.publish_state("bedroom/light/mode", "on")
+
+		# switch lighting if it's on
+		if self.states["bedroom/light/mode"] != "off":
+			if payload == "day":
+				self.publish_state("bedroom/light/mode", "on")
+			elif payload == "evening":
+				self.publish_state("bedroom/light/mode", "soft")
+			elif payload == "night":
+				self.publish_state("bedroom/light/mode", "mood")
 
 	commands = {
 		"minute": minute,
@@ -64,8 +65,12 @@ class lightswitch_bedroom(actor):
 	def turn_on(self, payload):
 		if self.states["time/daytime"] == "day":
 			self.publish_state("bedroom/light/mode", "on")
-		else:
+		elif self.states["time/daytime"] == "evening":
+			self.publish_state("bedroom/light/mode", "soft")
+		elif self.states["time/daytime"] == "night":
 			self.publish_state("bedroom/light/mode", "mood")
+		else: 
+			print("Error: state/time/daytime is fucked up")
 
 	def turn_off(self, payload):
 		self.publish_state("bedroom/light/mode", "off")
